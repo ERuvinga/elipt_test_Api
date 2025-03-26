@@ -8,7 +8,7 @@ const CtrlUser = require("../Controllers/users");
 router.post("/SignUp",  CtrlUserAuthentification.registerNewUser,CtrlUserAuthentification.decodeUserOtp);
 router.post("/SignIn", CtrlUserAuthentification.login);
 router.post("/ActiveAccount/verifyCode", CtrlUserAuthentification.ConfirmOptCode);
-router.put("/ActiveAccount/Password", CtrlUserAuthentification.Activation_account);
+router.put("/ActiveAccount/ConfigAccount", CtrlUserAuthentification.Activation_account);
 router.delete("/Delete/:id", CtrlUser.deleteUser);
 router.post("/logout", CtrlUser.logout);
 

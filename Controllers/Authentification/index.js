@@ -147,14 +147,15 @@ exports.login = (req, res) => {
 //Confirm Otp code
 exports.ConfirmOptCode =(req, res)=>{
     const idUser = req.body;
+    console.log(idUser);
     // get User datas
-    modelOfUsers.findOne({$and:[{email: idUser.email}, {ActivationToken:idUser.Token}]})
+    modelOfUsers.findOne({$and:[{email: idUser.email}, {ActivationToken:idUser.token}]})
     .then(userDatas=>{
         if(userDatas){
             res.status(200).json({msg:"Valid Code of user"});
         }
         else{
-           res.status(401).json({msg:"user not Found"}); 
+           res.status(401).json({msg:"user not Found / otpCode Invalid"}); 
         }
     })
     .catch(error =>{
@@ -170,23 +171,31 @@ exports.Activation_account = (req, res) => {
 
     // SEARCHING USER IN DATABASE
         try{
-            modelOfUsers.findOne({$and:[{email: idUser.email}, {ActivationToken:idUser.Token}]})
+             // hashing PassWord
+            
+            modelOfUsers.findOne({$and:[{email: idUser.email}, {ActivationToken:idUser.token}]})
             .then(userFund =>{
                 if(userFund){
                     if(userFund.isActive){
                         res.status(403).json({msg:"Compte actif, Connectez-vous!"});
                     }
                     else{
-                        // hashing PassWord
+                        if(!req.body.password){ // if password is not found
+                            throw "password is Required"
+                        }
                         
+                        if(!idUser.avatar){ // if avatar is not found
+                            throw "profile avatar is Required"
+                        }
+            
                         bcrypt.hash(req.body.password, SALTE_PWD)
                         .then(passwordHash =>{
                             console.log(passwordHash)
-                            modelOfUsers.updateOne({$and:[{email: idUser.email}, {ActivationToken:idUser.Token}]},{
+                            modelOfUsers.updateOne({$and:[{email: idUser.email}, {ActivationToken:idUser.token}]},{
                                 $set:{
                                     passWord:passwordHash,
                                     isActive: true,
-                                    cover:idUser.secureCover,
+                                    cover:idUser.avatar,
                                     ActivationToken:null
                                 }
                             })
@@ -212,12 +221,12 @@ exports.Activation_account = (req, res) => {
             })
             .catch(error =>{
                 console.log(error)
-                res.status(500).json({msg:"Error Server"});
+                res.status(400).json({msg:`Error: ${error}`});
             })
         }
         catch{(error)=>{
             console.log(error);
-            res.status(500).json({msg:"Error Server"});
+            res.status(403).json({msg:`Error: ${error}`});
         }}
     }
 
