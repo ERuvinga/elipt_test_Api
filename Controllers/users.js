@@ -1,5 +1,3 @@
-// nodemailer importing
-const nodemailer = require("nodemailer");
 
 // modelsusers 
 const modelOfUsers = require("../Models/Users"); // import model of Users

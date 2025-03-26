@@ -7,7 +7,7 @@ const app = express();  // methode express
 
 //Routes 
 const testRoute = require('./Routes/test');
-const CheckAuthUser = require("./Routes/Auth");
+const ProductRoute = require("./Routes/Product");
 const AppUserRoute = require("./Routes/AppUser")
 
 app.use(express.json());
@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/test', testRoute); // router checking if remote server runing
-app.use('/AuthUser', CheckAuthUser);
+app.use('/Product', ProductRoute);
 
 // userRoutes
 app.use("/AppUsers", AppUserRoute);

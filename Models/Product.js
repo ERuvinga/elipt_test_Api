@@ -2,10 +2,9 @@
 
 const mongoose = require("mongoose");
 const ProductShema = mongoose.Schema({
-    Title:{
+    title:{
         type:String,
         required:true,
-        unique:true,
     },
     description:{
         type:String,
@@ -15,8 +14,12 @@ const ProductShema = mongoose.Schema({
         type:String,
         required:true,
     },
-    price:{
+    idOfUser:{
         type:String,
+        required:true,
+    },
+    price:{
+        type:Number,
         required:true,
     },
     curency:{
