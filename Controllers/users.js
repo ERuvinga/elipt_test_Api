@@ -8,11 +8,15 @@ const modelOfUsers = require("../Models/Users"); // import model of Users
 exports.deleteUser =(req, res)=>{
         //search user in dataBase
         console.log(req.params);
+        console.log(req.UserAutorization._doc._id);
         modelOfUsers.findOne({_id:req.params.id})
         .then(userDatas=>{
             if(userDatas){
                 console.log(userDatas)
-                modelOfUsers.deleteOne({_id:req.params.id}).then(()=>console.log("user deleted"))           
+                modelOfUsers.deleteOne({_id:req.params.id}).then(()=>{
+                    console.log("user deleted")
+                    res.status(201).json({msg:"utilisateur efface"});
+                })           
             }
             else{
                 res.status(404).json({msg:"utilisateur inconu"});
@@ -21,7 +25,7 @@ exports.deleteUser =(req, res)=>{
         })
         .catch(error =>{
             console.log(error);
-            res.status(500).json({msg:"Erreur lors de la suppression"});
+            res.status(500).json({msg:"Erreur lors de la suppression: id Incorect"});
         }) 
 
 };
@@ -30,60 +34,23 @@ exports.deleteUser =(req, res)=>{
 exports.logout =(req, res)=>{
     //search user in dataBase
     console.log(req.body);
-    modelOfUsers.updateOne({_id:req.body.id},{
-        $set:{
-            socketID:null
-        }
-    })
-    .then(()=>{
+
+   try {
+    if(!req?.body?.id){
+        res.status(500).json({msg:"Deconnexion echouée id: is required"});
+    }
+    modelOfUsers.findOne({_id:req.UserAutorization._doc._id})
+    .then((userFound)=>{
+        console.log(userFound);
         console.log("user Logout")
-        res.status(200).json({msg:"User Logout"});
+        res.status(200).json({msg:"Sucess: User Logout"});
     })
 
     .catch((error)=>{
         console.log(error);
-        res.status(500).json({msg:"Deconnexion echouée, Error Server"});
-    })
-};
-
-exports.SignUp = (req, res) =>{
-    const DatasOfForm = req.body;
-    console.log(DatasOfForm);
-
-    // create Transport of nodemail
-    const transport = nodemailer.createTransport({
-        service:'Gmail',
-        auth:{
-            user:process.env.EMAIL_USER,
-            pass:process.env.EMAIL_PASSWORD
-        }
-    }) 
-
-    const newUser = new modelOfUsers(DatasOfForm); // created news user with datas of formulaire
-    newUser.save() // saving new objet in data base
-        .then((Userdatas)=> {
-            console.log(Userdatas);
-           
-            res.json({message: "'success': New User created"});
-            // option of sending mail
-            let mailOptions ={
-                from:process.env.EMAIL_USER,
-                to:DatasOfForm.email,
-                subject:"Création de compte reussi,",
-                text:`Cher(e) ${DatasOfForm.fname} ${DatasOfForm.lname},voici votre Code`,
-            };
-
-                // Send a email message to user
-            transport.sendMail(mailOptions,(error, infos)=>{
-                    if(error){
-                    return console.log(`Error : ${error}`);
-                    };
-            console.log(`Message sending ${infos}`)
-        });
-    })
-    .catch(error =>{
-        console.log(error);
-        res.status(501);
-        res.json({msg: "Echec de la creation: email existant"});
-    });
+        res.status(500).json({msg:"Deconnexion echouée",error:error});
+    })}
+    catch{(error)=>{
+        res.status(500).json({msg:"Deconnexion echouée", error:error});
+    }}
 };

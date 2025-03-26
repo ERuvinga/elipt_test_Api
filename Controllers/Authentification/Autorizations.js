@@ -6,7 +6,6 @@ const modelUser = require("../../Models/Users"); // import model of  user
 
 // controller Check Auth user
 exports.CheckAutorizationUser =(req, res, next)=>{
-    console.log(req.headers);
     let token = req.headers.authorization;
     console.log(token);
 
@@ -26,8 +25,7 @@ exports.CheckAutorizationUser =(req, res, next)=>{
         // search user in dataBase
         modelUser.findOne({_id:DataOfToken.idUser})
         .then(userFund =>{
-            console.log(userFund);
-                req.Autorization ={
+                req.UserAutorization ={
                 ...userFund
                 }
             next();
