@@ -95,74 +95,6 @@ exports.decodeUserOtp =(req, res)=>{
       });
 }
 
-exports.login = (req, res) => {
-    const InAuthorizationMsg = "email ou mot de pass d'utilisateur Incorrect";
-    const messageInactifAccount = "Ce Compte n'est pas encore Activé";
-
-    // cheking type of Account
-    modelOfUsers.findOne({email:req.body.email})
-            .then(userFound =>{
-                console.log(userFound);
-                if(userFound === null){
-                    res.status(401).json({msg:InAuthorizationMsg}) 
-                }
-
-                else{
-                    if(userFound.isActive){
-                        bcrypt.compare(req.body.password, userFound.passWord)
-                        .then(valid =>{
-                            if(!valid){
-                                res.status(401).json({msg:InAuthorizationMsg})  
-                            }
-
-                            else{
-                                // Create Token
-                            const Token = jwt.sign({
-                                    idUser:userFound._id,
-                                    mail:userFound.email,
-                                },process.env.TOKEN_SIGN);
-                                res.status(200).json({msg:"Utilisateur trouvé", Token, DataUser:userFound});
-                            }
-                        })
-                        .catch(error => {
-                            console.log(error);
-                            res.status(500).json({msg:"Error Server Token"})
-                        }
-                            )
-                    }
-
-                    else{
-                        res.status(401).json({msg:messageInactifAccount})
-                    }  
-                }
-            })
-            .catch(error =>{
-                 console.log(`Error Database ${error}`) // if Error  Connexion to dataBase
-                 res.status(500).json({msg:"Erreur server"}) 
-              });
-};
-
-
-
-//Confirm Otp code
-exports.ConfirmOptCode =(req, res)=>{
-    const idUser = req.body;
-    console.log(idUser);
-    // get User datas
-    modelOfUsers.findOne({$and:[{email: idUser.email}, {ActivationToken:idUser.token}]})
-    .then(userDatas=>{
-        if(userDatas){
-            res.status(200).json({msg:"Valid Code of user"});
-        }
-        else{
-           res.status(401).json({msg:"user not Found / otpCode Invalid"}); 
-        }
-    })
-    .catch(error =>{
-         console.log(`Error Database ${error}`) // if Error  Connexion to dataBase
-         res.status(500).json({msg:"Erreur server"}) 
-      });
-}
 
 //Updating password and image Profile
 exports.Activation_account = (req, res) => {
@@ -243,6 +175,75 @@ exports.Activation_account = (req, res) => {
            res.status(500).json({msg:"Impossible d'activer le compte -> Error Server lors du hashing du password"});
        });
 }  
+
+exports.login = (req, res) => {
+    const InAuthorizationMsg = "email ou mot de pass d'utilisateur Incorrect";
+    const messageInactifAccount = "Ce Compte n'est pas encore Activé";
+
+    // cheking type of Account
+    modelOfUsers.findOne({email:req.body.email})
+            .then(userFound =>{
+                console.log(userFound);
+                if(userFound === null){
+                    res.status(401).json({msg:InAuthorizationMsg}) 
+                }
+
+                else{
+                    if(userFound.isActive){
+                        bcrypt.compare(req.body.password, userFound.passWord)
+                        .then(valid =>{
+                            if(!valid){
+                                res.status(401).json({msg:InAuthorizationMsg})  
+                            }
+
+                            else{
+                                // Create Token
+                            const Token = jwt.sign({
+                                    idUser:userFound._id,
+                                    mail:userFound.email,
+                                },process.env.TOKEN_SIGN);
+                                res.status(200).json({msg:"Utilisateur trouvé", Token, DataUser:userFound});
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error);
+                            res.status(500).json({msg:"Error Server Token"})
+                        }
+                            )
+                    }
+
+                    else{
+                        res.status(401).json({msg:messageInactifAccount})
+                    }  
+                }
+            })
+            .catch(error =>{
+                 console.log(`Error Database ${error}`) // if Error  Connexion to dataBase
+                 res.status(500).json({msg:"Erreur server"}) 
+              });
+};
+
+
+
+//Confirm Otp code
+exports.ConfirmOptCode =(req, res)=>{
+    const idUser = req.body;
+    console.log(idUser);
+    // get User datas
+    modelOfUsers.findOne({$and:[{email: idUser.email}, {ActivationToken:idUser.token}]})
+    .then(userDatas=>{
+        if(userDatas){
+            res.status(200).json({msg:"Valid Code of user"});
+        }
+        else{
+           res.status(401).json({msg:"user not Found / otpCode Invalid"}); 
+        }
+    })
+    .catch(error =>{
+         console.log(`Error Database ${error}`) // if Error  Connexion to dataBase
+         res.status(500).json({msg:"Erreur server"}) 
+      });
+}
 
 
 exports.uploadImage =(req, res)=>{
