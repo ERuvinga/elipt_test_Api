@@ -13,6 +13,87 @@ const SALTE_PWD = 10;
 
 //Models
 const modelOfUsers = require("../../Models/Users"); // import model of Others user
+const sendemail = async (name,email, otpCode)=>{
+    // option of sending mail
+    // create Transport of nodemail
+     const transport = nodemailer.createTransport({
+             service:'Gmail',
+                 auth:{
+                     user:process.env.EMAIL_USER,
+                     pass:process.env.EMAIL_PASSWORD
+                     }
+                 });  
+
+    let mailOptions ={
+     from:process.env.EMAIL_USER,
+     to:email,
+     subject:"Success!, new account Created",
+     html:`Bonjour! <b style="font-size:1.2em; color:#227ABD;">${name}</b>, voici le code d'activation de votre compte: <p><b style="font-size:1.5em; color:#00cc00">${otpCode} </b></p> <p>ce code doit rester pivate</p>`,
+ };
+
+ // Send a email message to user
+ return transport.sendMail(mailOptions,(error, infos)=>{
+     if(error){
+         console.log(`Error : ${error}`)
+        return false;
+     };
+     console.log(`Message sending ${infos}`);
+     return true;
+ });
+}
+
+//Register New User
+exports.registerNewUser = (req, res, next) =>{
+    const DatasOfForm = req.body;
+    console.log(DatasOfForm);
+
+    const newUser = new modelOfUsers(DatasOfForm); // created news user with datas of formulaire
+    newUser.save() // saving new objet in data base
+    .then((datas)=> {
+        console.log(datas);
+        next()
+    })
+    .catch(error =>{
+        console.log(error);
+        res.status(501);
+        res.json({msg: "Echec de la creation du compte, email existant ou requis"});
+    });
+};
+
+//get otp code
+exports.decodeUserOtp =(req, res)=>{
+    const idUser = req.body;
+    console.log(idUser);
+    const userNotFoundMsg = "Utilisateur non trouvé";
+    
+    modelOfUsers.findOne({email: idUser.email})
+    .then(async (userDatas)=>{
+        if(userDatas){
+            console.log("user Found");
+            console.log(userDatas);
+            const otp= otp_generator.generate(6, { upperCaseAlphabets: false, specialChars: false });
+
+            modelOfUsers.updateOne({email: userDatas.email},{$set:{
+                ActivationToken:otp
+            }})
+            .catch(()=> {
+                res.status(500).json({msg:"Erreur server"}) 
+            });  
+
+            //send Email
+            await sendemail(`${userDatas.fname} ${userDatas.lname}`,userDatas.email, otp); 
+            res.status(201).json({msg:"Success,  New User created and otp code sent"});
+        }
+
+        else{
+            res.status(404).json({msg:userNotFoundMsg}) 
+        }
+    })
+    .catch(error =>{
+         console.log(`Error Database ${error}`) // if Error  Connexion to dataBase
+         res.status(500).json({msg:"Erreur server"}) 
+      });
+}
 
 exports.login = (req, res) => {
     const InAuthorizationMsg = "email ou mot de pass d'utilisateur Incorrect";
@@ -61,72 +142,7 @@ exports.login = (req, res) => {
               });
 };
 
-const sendemail = async (name,email, otpCode)=>{
-       // option of sending mail
-                       // create Transport of nodemail
-        const transport = nodemailer.createTransport({
-                service:'Gmail',
-                    auth:{
-                        user:process.env.EMAIL_USER,
-                        pass:process.env.EMAIL_PASSWORD
-                        }
-                    });  
 
-       let mailOptions ={
-        from:process.env.EMAIL_USER,
-        to:email,
-        subject:"Demande d'activation de votre compte sur Smart meter App",
-        html:`Cher(e) <b style="font-size:1.2em; color:#227ABD;">${name}</b>, nous avons recu votre demande d'activation de compte chez SMART METER. <p> Votre code est: <b style="font-size:1.5em; color:#00cc00">${otpCode} </b></p> <p>ce code doit rester prive</p>`,
-    };
-
-    // Send a email message to user
-    return transport.sendMail(mailOptions,(error, infos)=>{
-        if(error){
-            console.log(`Error : ${error}`)
-           return false;
-        };
-        console.log(`Message sending ${infos}`);
-        return true;
-    });
-}
-
-//get otp code
-exports.decodeUserOtp =(req, res, next)=>{
-    const idUser = req.body;
-    const userNotFoundMsg = "Utilisateur non trouvé";
-    
-    modelOfUsers.findOne({email: idUser.email})
-    .then(userDatas=>{
-        if(userDatas){
-            // datas user sending
-            req.name=`${userDatas.fname} ${userDatas.lname}`;
-            req.email=`${userDatas.email}`;
-            req.otp= otp_generator.generate(6, { upperCaseAlphabets: false, specialChars: false });
-            next();
-        }
-
-        else{
-            res.status(404).json({msg:userNotFoundMsg}) 
-        }
-    })
-    .catch(error =>{
-         console.log(`Error Database ${error}`) // if Error  Connexion to dataBase
-         res.status(500).json({msg:"Erreur server"}) 
-      });
-}
-exports.getOpt = async (req, res)=>{
-            //save otp code
-            modelOfUsers.updateOne({email: req.email},{$set:{
-                ActivationToken:req.otp
-            }})
-            .catch(()=> {
-                res.status(500).json({msg:"Erreur server"}) 
-            });  
-
-            //send Email
-            await sendemail(req.name,req.email, req.otp);
-            res.status(201).json({msg:"Success, send otp code"});
-}
 
 //Confirm Otp code
 exports.ConfirmOptCode =(req, res)=>{
@@ -219,49 +235,6 @@ exports.Activation_account = (req, res) => {
        });
 }  
 
-//Register New User
-exports.registerNewUser = (req, res) =>{
-    const DatasOfForm = req.body;
-    console.log(DatasOfForm);
-
-// create Transport of nodemail
-const transport = nodemailer.createTransport({
-    service:'Gmail',
-    auth:{
-        user:process.env.EMAIL_USER,
-        pass:process.env.EMAIL_PASSWORD
-    }
-}) 
-
-    const newUser = new modelOfUsers(DatasOfForm); // created news user with datas of formulaire
-    newUser.save() // saving new objet in data base
-    .then((datas)=> {
-        res.status(200);
-        res.json({message: "'success': New User created"});
-
-            // option of sending mail
-            let mailOptions ={
-                from:process.env.EMAIL_USER,
-                to:DatasOfForm.email,
-                subject:"Creation de compte reussi, Bienvenu sur la plaforme de gestion efficace d'eau",
-                text:`Cher(e) ${DatasOfForm.fname} ${DatasOfForm.lname},Bienvenue chez SMART METER.`,
-            };
-    
-            // Send a email message to user
-            transport.sendMail(mailOptions,(error, infos)=>{
-                if(error){
-                   return console.log(`Error : ${error}`);
-                };
-                console.log(`Message sending ${infos}`)
-            });
-        console.log(datas);
-    })
-    .catch(error =>{
-        console.log(error);
-        res.status(501);
-        res.json({msg: "Echec de la creation du compte"});
-    });
-};
 
 exports.uploadImage =(req, res)=>{
 
@@ -274,7 +247,7 @@ exports.uploadImage =(req, res)=>{
     try{
 
         cloudinary.uploader.upload(req.file.path,{
-            folder:"image-smartMeter",
+            folder:"elipt_images_test",
             transformation:{width:300, height:300, crop:'limit'}
         }).then((datas)=>{
 
